@@ -1,0 +1,6 @@
+INSTALL
+npm install
+npm install sweetalert2
+px ng version
+
+npx ng serve

@@ -1,21 +1,27 @@
 import { Routes } from '@angular/router';
+import { roleGuard } from './core/guards/role.guard';
+import { LayoutComponent } from './shared/components/layout/layout.component';
 
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: '/productos',  // ← ejemplo temporal asi se usaran los routers , seguir la hilacion porfavor ,no complicarse
+    redirectTo: 'login',
     pathMatch: 'full'
   },
-  // {
-  //   path: 'auth',
-  //   loadChildren: () => import('./auth/routes/auth.routes').then(m => m.authRoutes)
-  // },
-  // {
-  //   path: 'productos',
-  //   loadChildren: () => import('./productos/routes/productos.routes').then(m => m.productosRoutes)
-  // },
-  // {
-  //   path: '**',
-  //   redirectTo: '/productos'  // ← Cambiar aquí también
-  // }
+  {
+    path: 'login',
+    loadComponent: () => import('./modules/auth/views/login/login.component').then(m => m.LoginComponent)
+  },
+  {
+    path: '',
+    component: LayoutComponent,
+    canActivate: [roleGuard],
+    children: [
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./modules/dashboard/views/dashboard/dashboard.component').then(m => m.DashboardComponent),
+        data: { roles: ['admin', 'mesero', 'cocina', 'caja'] }
+      }
+    ]
+  }
 ];
