@@ -1,40 +1,50 @@
-<aside
-  [class.w-64]="!isCollapsed"
-  [class.w-20]="isCollapsed"
-  class="bg-gray-900 text-white h-screen fixed left-0 top-0 transition-all duration-300 shadow-xl z-50">
+<aside [class.w-64]="!isCollapsed" [class.w-20]="isCollapsed"
+       class="bg-gray-900 text-white min-h-screen flex flex-col transition-all duration-300">
 
   <!-- Header -->
-  <div class="flex items-center justify-between p-4 border-b border-gray-700">
-    <h1 *ngIf="!isCollapsed" class="text-xl font-bold">ControlFit</h1>
-    <button
-      (click)="toggleSidebar()"
-      class="p-2 hover:bg-gray-800 rounded-lg transition">
-      <lucide-icon [img]="isCollapsed ? Menu : X" [size]="20"></lucide-icon>
+  <div class="p-4 flex items-center justify-between border-b border-gray-800">
+    <h1 *ngIf="!isCollapsed" class="text-2xl font-bold text-orange-500">RestoYa!</h1>
+    <h1 *ngIf="isCollapsed" class="text-2xl font-bold text-orange-500">R</h1>
+    <button (click)="toggleSidebar()" class="text-gray-400 hover:text-white">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              [attr.d]="isCollapsed ? 'M9 5l7 7-7 7' : 'M15 19l-7-7 7-7'"></path>
+      </svg>
     </button>
   </div>
 
   <!-- Menu Items -->
-  <nav class="mt-8">
-    <a
-      *ngFor="let item of menuItems"
-      [routerLink]="item.path"
-      routerLinkActive="bg-blue-600"
-      class="flex items-center gap-4 px-4 py-3 hover:bg-gray-800 transition cursor-pointer">
-      <lucide-icon [img]="item.icon" [size]="20"></lucide-icon>
+  <nav class="flex-1 p-4 space-y-2">
+    <a *ngFor="let item of menuItems"
+       [routerLink]="item.route"
+       routerLinkActive="bg-orange-600"
+       class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-800 transition group">
+      <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="item.icon"></path>
+      </svg>
       <span *ngIf="!isCollapsed" class="font-medium">{{ item.label }}</span>
     </a>
   </nav>
 
-  <!-- User Section -->
-  <div class="absolute bottom-0 w-full p-4 border-t border-gray-700">
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center font-bold">
-        DV
-      </div>
-      <div *ngIf="!isCollapsed">
-        <p class="font-medium text-sm">DanielDev</p>
-        <p class="text-xs text-gray-400">Administrador</p>
-      </div>
+<!-- User Info -->
+<div class="p-4 border-t border-gray-800">
+  <div class="flex items-center space-x-3 mb-3">
+    <div class="w-10 h-10 rounded-full bg-orange-600 flex items-center justify-center flex-shrink-0">
+      <span class="text-white font-bold">{{ currentUser?.nombre?.charAt(0) || 'U' }}</span>
+    </div>
+    <div *ngIf="!isCollapsed" class="flex-1 min-w-0">
+      <p class="text-sm font-medium truncate">{{ currentUser?.nombre || '' }}</p>
+      <p class="text-xs text-gray-400 capitalize">{{ currentUser?.rol || '' }}</p>
     </div>
   </div>
+
+  <button (click)="logout()"
+          class="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+    </svg>
+    <span *ngIf="!isCollapsed">Cerrar sesión</span>
+  </button>
+</div>
 </aside>
