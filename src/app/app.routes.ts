@@ -21,6 +21,16 @@ export const routes: Routes = [
         path: 'dashboard',
         loadComponent: () => import('./modules/dashboard/views/dashboard/dashboard.component').then(m => m.DashboardComponent),
         data: { roles: ['admin', 'mesero', 'cocina', 'caja'] }
+      },
+      {
+        path: 'mesas',
+        loadComponent: () => import('./modules/mesas/views/mesas/mesas.component').then(m => m.MesasComponent),
+        data: { roles: ['admin', 'mesero'] }
+      },
+      {
+        path: 'productos',
+        loadComponent: () => import('./modules/productos/views/productos/productos.component').then(m => m.ProductosComponent),
+        data: { roles: ['admin', 'mesero', 'cocina', 'caja'] }
       }
     ]
   }
