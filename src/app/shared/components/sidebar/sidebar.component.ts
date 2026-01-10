@@ -1,33 +1,43 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { LucideAngularModule, Package, DollarSign, Users, BarChart3, Settings, Menu, X } from 'lucide-angular';
+import { RouterModule, Router } from '@angular/router';
+import { AuthService } from '../../../core/services/auth.service';
+import { Usuario } from '../../interfaces/usuario.interface';
+import { MENU_ITEMS, MenuItem } from '../../config/sidebar.config';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterModule, LucideAngularModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './sidebar.component.html',
   styleUrls: ['./sidebar.component.css']
 })
-export class SidebarComponent {
-  readonly Package = Package;
-  readonly DollarSign = DollarSign;
-  readonly Users = Users;
-  readonly BarChart3 = BarChart3;
-  readonly Settings = Settings;
-  readonly Menu = Menu;
-  readonly X = X;
-
+export class SidebarComponent implements OnInit {
+  menuItems: MenuItem[] = [];
+  currentUser: Usuario | null = null;
   isCollapsed = false;
 
-  menuItems = [
-    { path: '/productos', icon: this.Package, label: 'Productos' },
-    { path: '/ventas', icon: this.DollarSign, label: 'Ventas' },
-    { path: '/clientes', icon: this.Users, label: 'Clientes' },
-    { path: '/reportes', icon: this.BarChart3, label: 'Reportes' },
-    { path: '/configuracion', icon: this.Settings, label: 'Configuración' }
-  ];
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
+
+  ngOnInit() {
+    this.authService.currentUser$.subscribe(user => {
+      this.currentUser = user;
+      this.menuItems = this.getFilteredMenu(user?.rol);
+    });
+  }
+
+  getFilteredMenu(userRole?: string): MenuItem[] {
+    if (!userRole) return [];
+    return MENU_ITEMS.filter(item => item.roles.includes(userRole));
+  }
+
+  logout() {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+  }
 
   toggleSidebar() {
     this.isCollapsed = !this.isCollapsed;

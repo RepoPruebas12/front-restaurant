@@ -1,40 +1,86 @@
-<aside
-  [class.w-64]="!isCollapsed"
-  [class.w-20]="isCollapsed"
-  class="bg-gray-900 text-white h-screen fixed left-0 top-0 transition-all duration-300 shadow-xl z-50">
+<aside [class.w-64]="!isCollapsed" [class.w-20]="isCollapsed"
+       class="bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white min-h-screen flex flex-col transition-all duration-300 shadow-2xl">
 
-  <!-- Header -->
-  <div class="flex items-center justify-between p-4 border-b border-gray-700">
-    <h1 *ngIf="!isCollapsed" class="text-xl font-bold">ControlFit</h1>
-    <button
-      (click)="toggleSidebar()"
-      class="p-2 hover:bg-gray-800 rounded-lg transition">
-      <lucide-icon [img]="isCollapsed ? Menu : X" [size]="20"></lucide-icon>
+  <!-- Header con logo -->
+  <div class="p-4 flex items-center justify-between border-b border-gray-700/50">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7m-12.7-.7 6.4-6.3M19 5l-7 7"></path>
+        </svg>
+      </div>
+      <h1 *ngIf="!isCollapsed" class="text-2xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+        Restobar
+      </h1>
+    </div>
+    <button (click)="toggleSidebar()" class="text-gray-400 hover:text-white transition-colors">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="isCollapsed ? 'M9 5l7 7-7 7' : 'M15 19l-7-7 7-7'"></path>
+      </svg>
     </button>
   </div>
 
   <!-- Menu Items -->
-  <nav class="mt-8">
-    <a
-      *ngFor="let item of menuItems"
-      [routerLink]="item.path"
-      routerLinkActive="bg-blue-600"
-      class="flex items-center gap-4 px-4 py-3 hover:bg-gray-800 transition cursor-pointer">
-      <lucide-icon [img]="item.icon" [size]="20"></lucide-icon>
-      <span *ngIf="!isCollapsed" class="font-medium">{{ item.label }}</span>
+  <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+    <a *ngFor="let item of menuItems"
+       [routerLink]="item.route"
+       routerLinkActive="bg-gradient-to-r from-orange-500 to-orange-600 shadow-lg"
+       [routerLinkActiveOptions]="{exact: false}"
+       class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-700/50 transition-all duration-200 group relative overflow-hidden"
+       [class.justify-center]="isCollapsed">
+
+      <!-- Hover effect -->
+      <div class="absolute inset-0 bg-gradient-to-r from-orange-500/0 to-orange-600/0 group-hover:from-orange-500/10 group-hover:to-orange-600/10 transition-all duration-300"></div>
+
+      <!-- Icon -->
+      <svg class="w-5 h-5 flex-shrink-0 relative z-10 group-hover:scale-110 transition-transform"
+           fill="none"
+           stroke="currentColor"
+           stroke-width="2"
+           stroke-linecap="round"
+           stroke-linejoin="round"
+           viewBox="0 0 24 24">
+        <path [attr.d]="item.icon"></path>
+      </svg>
+
+      <!-- Label -->
+      <span *ngIf="!isCollapsed" class="font-medium relative z-10 group-hover:translate-x-1 transition-transform">
+        {{ item.label }}
+      </span>
+
+      <!-- Active indicator -->
+      <div *ngIf="isCollapsed"
+           routerLinkActive="opacity-100"
+           class="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-orange-500 rounded-r-full opacity-0 transition-opacity">
+      </div>
     </a>
   </nav>
 
-  <!-- User Section -->
-  <div class="absolute bottom-0 w-full p-4 border-t border-gray-700">
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center font-bold">
-        DV
+  <!-- User Info -->
+  <div class="p-3 border-t border-gray-700/50 bg-gray-800/30">
+    <div class="flex items-center space-x-3 mb-3 px-3 py-2 rounded-xl hover:bg-gray-700/30 transition-all cursor-pointer"
+         [class.justify-center]="isCollapsed">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg ring-2 ring-orange-500/20">
+        <span class="text-white font-bold text-lg">{{ currentUser?.nombre?.charAt(0) || 'U' }}</span>
       </div>
-      <div *ngIf="!isCollapsed">
-        <p class="font-medium text-sm">DanielDev</p>
-        <p class="text-xs text-gray-400">Administrador</p>
+      <div *ngIf="!isCollapsed" class="flex-1 min-w-0">
+        <p class="text-sm font-semibold truncate text-white">{{ currentUser?.nombre }}</p>
+        <p class="text-xs text-gray-400 capitalize flex items-center space-x-1">
+          <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+          </svg>
+          <span>{{ currentUser?.rol }}</span>
+        </p>
       </div>
     </div>
+
+    <button (click)="logout()"
+            class="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 group"
+            [class.px-3]="isCollapsed">
+      <svg class="w-5 h-5 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+      </svg>
+      <span *ngIf="!isCollapsed" class="font-semibold">Cerrar sesión</span>
+    </button>
   </div>
 </aside>
