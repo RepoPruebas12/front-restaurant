@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { MesasApiService } from '../../services/mesas-api.service';
+import { OrdenesApiService } from '../../../ordenes/services/ordenes-api.service';
 import { Mesa, Salon } from '../../interfaces/mesa.interface';
 import { AuthService } from '../../../../core/services/auth.service';
 
@@ -16,16 +18,32 @@ export class MesasComponent implements OnInit {
   mesas: Mesa[] = [];
   mesasFiltradas: Mesa[] = [];
   salones: Salon[] = [];
-  isLoading = false;
+  salonSeleccionado: number | null = null;
+
+  // Modal comensales
   showModal = false;
   mesaSeleccionada: Mesa | null = null;
   comensalesTemp = 0;
-  salonSeleccionado: number | null = null;
+
+  // Modal cobro
+  showModalCobro = false;
+  ordenCobro: any = null;
+  itemsCobro: any[] = [];
+  metodoPago: string = 'efectivo';
+
+  isLoading = false;
 
   constructor(
     private mesasApiService: MesasApiService,
-    private authService: AuthService
+    private ordenesApiService: OrdenesApiService,
+    private authService: AuthService,
+    private router: Router
   ) {}
+
+  get esRolCaja(): boolean {
+    const rol = this.authService.currentUserValue?.rol;
+    return rol === 'caja' || rol === 'admin';
+  }
 
   ngOnInit() {
     this.cargarSalones();
@@ -38,7 +56,6 @@ export class MesasComponent implements OnInit {
     this.mesasApiService.listarSalones(restauranteId).subscribe({
       next: (response) => {
         this.salones = response.data;
-        // Seleccionar el primer salón por defecto
         if (this.salones.length > 0) {
           this.salonSeleccionado = this.salones[0].id;
           this.filtrarPorSalon(this.salonSeleccionado);
@@ -57,7 +74,7 @@ export class MesasComponent implements OnInit {
     this.mesasApiService.listarMesas(restauranteId).subscribe({
       next: (response) => {
         this.mesas = response.data;
-        this.aplicarFiltro();
+        this.filtrarPorSalon(this.salonSeleccionado);
         this.isLoading = false;
       },
       error: (error) => {
@@ -67,50 +84,55 @@ export class MesasComponent implements OnInit {
     });
   }
 
-  aplicarFiltro() {
-    if (this.salonSeleccionado === null) {
+  filtrarPorSalon(salonId: number | null) {
+    this.salonSeleccionado = salonId;
+
+    if (salonId === null) {
       this.mesasFiltradas = this.mesas;
     } else {
-      this.mesasFiltradas = this.mesas.filter(m => m.salon_id === this.salonSeleccionado);
+      this.mesasFiltradas = this.mesas.filter(mesa => mesa.salon_id === salonId);
     }
   }
 
-  filtrarPorSalon(salonId: number) {
-    this.salonSeleccionado = salonId;
-    this.aplicarFiltro();
-  }
-
   abrirModal(mesa: Mesa) {
-    this.mesaSeleccionada = mesa;
-    this.comensalesTemp = mesa.comensales;
-    this.showModal = true;
+    // Si es CAJA y mesa pide cuenta → Abrir modal cobro
+    if (this.esRolCaja && mesa.estado_id === 2) {
+      this.abrirModalCobro(mesa);
+      return;
+    }
+
+    // Si la mesa está libre, registrar comensales primero
+    if (mesa.estado_id === 0) {
+      this.mesaSeleccionada = mesa;
+      this.comensalesTemp = 0;
+      this.showModal = true;
+    } else {
+      // Si está ocupada, ir a tomar orden
+      this.router.navigate(['/ordenes/tomar-orden'], {
+        queryParams: {
+          mesa_id: mesa.id,
+          mesa_numero: mesa.numero
+        }
+      });
+    }
   }
 
   cerrarModal() {
     this.showModal = false;
     this.mesaSeleccionada = null;
+    this.comensalesTemp = 0;
   }
 
-  cambiarEstado(nuevoEstadoId: number) {
-    if (!this.mesaSeleccionada) return;
+  incrementarComensales() {
+    if (this.mesaSeleccionada && this.comensalesTemp < this.mesaSeleccionada.capacidad) {
+      this.comensalesTemp++;
+    }
+  }
 
-    const comensales = nuevoEstadoId === 0 ? 0 : this.comensalesTemp;
-
-    const data = {
-      mesa_id: this.mesaSeleccionada.id,
-      estado_id: nuevoEstadoId,
-      comensales: comensales
-    };
-
-    this.mesasApiService.actualizarEstadoMesa(data).subscribe({
-      next: () => {
-        this.cargarMesas();
-        this.cerrarModal();
-      },
-      error: (error) => {
-        console.error('Error al actualizar mesa:', error);
-      }
-    });
+  decrementarComensales() {
+    if (this.comensalesTemp > 0) {
+      this.comensalesTemp--;
+    }
   }
 
   registrarMesa() {
@@ -121,18 +143,103 @@ export class MesasComponent implements OnInit {
       return;
     }
 
-    this.cambiarEstado(1);
+    // Cambiar mesa a ocupada
+    const data = {
+      mesa_id: this.mesaSeleccionada.id,
+      estado_id: 1,
+      comensales: this.comensalesTemp
+    };
+
+    this.mesasApiService.actualizarEstadoMesa(data).subscribe({
+      next: () => {
+        // Ir a tomar orden
+        this.router.navigate(['/ordenes/tomar-orden'], {
+          queryParams: {
+            mesa_id: this.mesaSeleccionada!.id,
+            mesa_numero: this.mesaSeleccionada!.numero
+          }
+        });
+        this.cerrarModal();
+      },
+      error: (error) => {
+        console.error('Error al actualizar mesa:', error);
+      }
+    });
   }
 
-  incrementarComensales() {
-    if (this.comensalesTemp < 10) {
-      this.comensalesTemp++;
-    }
+  cambiarEstado(estado_id: number) {
+    if (!this.mesaSeleccionada) return;
+
+    const data = {
+      mesa_id: this.mesaSeleccionada.id,
+      estado_id: estado_id,
+      comensales: estado_id === 0 ? 0 : this.mesaSeleccionada.comensales
+    };
+
+    this.mesasApiService.actualizarEstadoMesa(data).subscribe({
+      next: () => {
+        this.cargarMesas();
+        this.cerrarModal();
+      },
+      error: (error) => {
+        console.error('Error al cambiar estado:', error);
+      }
+    });
   }
 
-  decrementarComensales() {
-    if (this.comensalesTemp > 0) {
-      this.comensalesTemp--;
-    }
+  // MÉTODOS PARA MODAL COBRO
+
+  abrirModalCobro(mesa: Mesa) {
+    this.mesaSeleccionada = mesa;
+
+    // Cargar orden de la mesa
+    this.ordenesApiService.obtenerOrdenMesa(mesa.id).subscribe({
+      next: (response) => {
+        if (response.data && Object.keys(response.data).length > 0) {
+          const data: any = response.data;
+          this.ordenCobro = data.orden;
+          this.itemsCobro = data.items || [];
+          this.metodoPago = 'efectivo';
+          this.showModalCobro = true;
+        }
+      },
+      error: (error) => {
+        console.error('Error al cargar orden:', error);
+      }
+    });
+  }
+
+  cerrarModalCobro() {
+    this.showModalCobro = false;
+    this.mesaSeleccionada = null;
+    this.ordenCobro = null;
+    this.itemsCobro = [];
+  }
+
+  cobrar() {
+    if (!this.ordenCobro) return;
+
+    if (!confirm(`¿Cobrar S/ ${this.ordenCobro.total}?`)) return;
+
+    this.ordenesApiService.cobrarOrden(this.ordenCobro.id).subscribe({
+      next: () => {
+        alert('Orden cobrada exitosamente');
+        // TODO: Aquí iría la impresión de boleta
+        this.cerrarModalCobro();
+        this.cargarMesas();
+      },
+      error: (error) => {
+        console.error('Error al cobrar:', error);
+        alert('Error al cobrar orden');
+      }
+    });
+  }
+
+  getItemsPorEnvio(envioNumero: number): any[] {
+    return this.itemsCobro.filter(i => i.envio_numero === envioNumero);
+  }
+
+  getEnviosUnicos(): number[] {
+    return [...new Set(this.itemsCobro.map(i => i.envio_numero))].sort();
   }
 }
