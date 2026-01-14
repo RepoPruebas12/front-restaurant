@@ -6,6 +6,7 @@ import { MesasApiService } from '../../services/mesas-api.service';
 import { OrdenesApiService } from '../../../ordenes/services/ordenes-api.service';
 import { Mesa, Salon } from '../../interfaces/mesa.interface';
 import { AuthService } from '../../../../core/services/auth.service';
+import { ToastService } from '../../../../core/services/toast.service';
 
 @Component({
   selector: 'app-mesas',
@@ -37,7 +38,8 @@ export class MesasComponent implements OnInit {
     private mesasApiService: MesasApiService,
     private ordenesApiService: OrdenesApiService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private toastService: ToastService
   ) {}
 
   get esRolCaja(): boolean {
@@ -63,6 +65,7 @@ export class MesasComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error al cargar salones:', error);
+        this.toastService.error('Error', 'No se pudieron cargar los salones');
       }
     });
   }
@@ -79,6 +82,7 @@ export class MesasComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error al cargar mesas:', error);
+        this.toastService.error('Error', 'No se pudieron cargar las mesas');
         this.isLoading = false;
       }
     });
@@ -139,11 +143,10 @@ export class MesasComponent implements OnInit {
     if (!this.mesaSeleccionada) return;
 
     if (this.comensalesTemp < 1) {
-      alert('Debe seleccionar al menos 1 comensal');
+      this.toastService.warning('Seleccione comensales', 'Debe tener al menos 1 comensal');
       return;
     }
 
-    // Cambiar mesa a ocupada
     const data = {
       mesa_id: this.mesaSeleccionada.id,
       estado_id: 1,
@@ -152,7 +155,10 @@ export class MesasComponent implements OnInit {
 
     this.mesasApiService.actualizarEstadoMesa(data).subscribe({
       next: () => {
-        // Ir a tomar orden
+        this.toastService.success(
+          'Mesa registrada',
+          `Mesa ${this.mesaSeleccionada!.numero} con ${this.comensalesTemp} comensales`
+        );
         this.router.navigate(['/ordenes/tomar-orden'], {
           queryParams: {
             mesa_id: this.mesaSeleccionada!.id,
@@ -163,6 +169,7 @@ export class MesasComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error al actualizar mesa:', error);
+        this.toastService.error('Error', 'No se pudo registrar la mesa');
       }
     });
   }
@@ -178,11 +185,14 @@ export class MesasComponent implements OnInit {
 
     this.mesasApiService.actualizarEstadoMesa(data).subscribe({
       next: () => {
+        const mensaje = estado_id === 0 ? 'Mesa liberada' : 'Estado actualizado';
+        this.toastService.success(mensaje, `Mesa ${this.mesaSeleccionada!.numero}`);
         this.cargarMesas();
         this.cerrarModal();
       },
       error: (error) => {
         console.error('Error al cambiar estado:', error);
+        this.toastService.error('Error', 'No se pudo cambiar el estado');
       }
     });
   }
@@ -190,21 +200,10 @@ export class MesasComponent implements OnInit {
   // MÉTODOS PARA MODAL COBRO
 
   abrirModalCobro(mesa: Mesa) {
-    this.mesaSeleccionada = mesa;
-
-    // Cargar orden de la mesa
-    this.ordenesApiService.obtenerOrdenMesa(mesa.id).subscribe({
-      next: (response) => {
-        if (response.data && Object.keys(response.data).length > 0) {
-          const data: any = response.data;
-          this.ordenCobro = data.orden;
-          this.itemsCobro = data.items || [];
-          this.metodoPago = 'efectivo';
-          this.showModalCobro = true;
-        }
-      },
-      error: (error) => {
-        console.error('Error al cargar orden:', error);
+    // Redirigir a vista completa de cobro
+    this.router.navigate(['/caja/cobrar'], {
+      queryParams: {
+        mesa_id: mesa.id
       }
     });
   }
@@ -219,18 +218,15 @@ export class MesasComponent implements OnInit {
   cobrar() {
     if (!this.ordenCobro) return;
 
-    if (!confirm(`¿Cobrar S/ ${this.ordenCobro.total}?`)) return;
-
     this.ordenesApiService.cobrarOrden(this.ordenCobro.id).subscribe({
       next: () => {
-        alert('Orden cobrada exitosamente');
-        // TODO: Aquí iría la impresión de boleta
+        this.toastService.success('✅ Orden cobrada', `S/ ${this.ordenCobro.total}`);
         this.cerrarModalCobro();
         this.cargarMesas();
       },
       error: (error) => {
         console.error('Error al cobrar:', error);
-        alert('Error al cobrar orden');
+        this.toastService.error('Error', 'No se pudo cobrar la orden');
       }
     });
   }
