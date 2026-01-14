@@ -8,6 +8,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { Orden, OrdenItem } from '../../interfaces/orden.interface';
 import { Producto } from '../../../productos/interfaces/producto.interface';
 import { MesasApiService } from '../../../mesas/services/mesas-api.service';
+import { ToastService } from '../../../../core/services/toast.service';
 
 @Component({
   selector: 'app-tomar-orden',
@@ -46,9 +47,9 @@ export class TomarOrdenComponent implements OnInit {
     private router: Router,
     private ordenesApiService: OrdenesApiService,
     private productosApiService: ProductosApiService,
-    private mesasApiService: MesasApiService,  // ← AGREGA
-    private authService: AuthService
-
+    private mesasApiService: MesasApiService,
+    private authService: AuthService,
+    private toastService: ToastService
   ) {}
 
   ngOnInit() {
@@ -80,7 +81,14 @@ export class TomarOrdenComponent implements OnInit {
 
     this.productosApiService.listarProductos(restauranteId).subscribe({
       next: (response) => {
-        this.productos = response.data.filter((p: Producto) => p.disponible === 1);
+        this.productos = response.data.filter((p: Producto) => {
+          if (p.disponible !== 1) return false;
+          if (p.controla_stock === 1) {
+            return p.stock_actual > 0;
+          }
+          return true;
+        });
+
         this.aplicarFiltros();
       }
     });
@@ -112,11 +120,9 @@ export class TomarOrdenComponent implements OnInit {
           this.orden = data.orden;
           this.items = data.items || [];
 
-          // Separar items pendientes y enviados
           this.itemsPendientes = this.items.filter(i => i.estado_item_id === 0);
           this.itemsEnviados = this.items.filter(i => i.estado_item_id === 1);
         } else {
-          // No hay orden, crear una
           this.crearOrden();
         }
         this.isLoading = false;
@@ -169,20 +175,30 @@ export class TomarOrdenComponent implements OnInit {
       items: items
     }).subscribe({
       next: () => {
+        this.toastService.success(
+          'Producto agregado',
+          `${this.productoSeleccionado?.nombre} x${this.cantidadTemp}`
+        );
         this.cargarOrdenMesa();
         this.cerrarModalAgregar();
       },
       error: (error) => {
         console.error('Error al agregar producto:', error);
-        alert(error.error?.message || 'Error al agregar producto');
+
+        if (error.error?.message?.includes('Stock insuficiente')) {
+          this.toastService.error(
+            'Stock insuficiente',
+            `No hay suficiente ${this.productoSeleccionado?.nombre}`
+          );
+        } else {
+          this.toastService.error('Error', 'No se pudo agregar el producto');
+        }
       }
     });
   }
 
   enviarCocina() {
     if (!this.orden || this.itemsPendientes.length === 0) return;
-
-    if (!confirm(`¿Enviar ${this.itemsPendientes.length} items a cocina?`)) return;
 
     const envioNumero = this.itemsPendientes[0].envio_numero;
 
@@ -191,31 +207,36 @@ export class TomarOrdenComponent implements OnInit {
       envio_numero: envioNumero
     }).subscribe({
       next: () => {
-        alert('Items enviados a cocina exitosamente');
+        this.toastService.success(
+          '✅ Enviado a cocina',
+          `${this.itemsPendientes.length} items enviados`
+        );
         this.cargarOrdenMesa();
       },
       error: (error) => {
         console.error('Error al enviar a cocina:', error);
-        alert('Error al enviar a cocina');
+        this.toastService.error('Error', 'No se pudo enviar a cocina');
       }
     });
   }
 
   eliminarItem(item: OrdenItem) {
     if (item.estado_item_id !== 0) {
-      alert('No se puede eliminar un item ya enviado a cocina');
+      this.toastService.warning(
+        'No se puede eliminar',
+        'El item ya fue enviado a cocina'
+      );
       return;
     }
 
-    if (!confirm(`¿Eliminar ${item.producto_nombre}?`)) return;
-
     this.ordenesApiService.eliminarItem(item.id).subscribe({
       next: () => {
+        this.toastService.success('Item eliminado', item.producto_nombre);
         this.cargarOrdenMesa();
       },
       error: (error) => {
         console.error('Error al eliminar item:', error);
-        alert('Error al eliminar item');
+        this.toastService.error('Error', 'No se pudo eliminar el item');
       }
     });
   }
@@ -242,32 +263,36 @@ export class TomarOrdenComponent implements OnInit {
     };
     return colores[categoria] || 'bg-gray-100 text-gray-700';
   }
+
   solicitarCuenta() {
-  if (!this.orden) return;
+    if (!this.orden) return;
 
-  if (this.itemsPendientes.length > 0) {
-    alert('Debe enviar todos los items a cocina antes de solicitar la cuenta');
-    return;
-  }
-
-  if (!confirm('¿Solicitar cuenta para esta mesa?')) return;
-
-  // Cambiar estado de mesa a "pide_cuenta"
-  this.mesasApiService.actualizarEstadoMesa({
-    mesa_id: this.mesaId,
-    estado_id: 2,  // pide_cuenta
-    comensales: 0   // Mantener comensales
-  }).subscribe({
-    next: () => {
-      alert('Cuenta solicitada. La mesa está lista para caja.');
-      this.router.navigate(['/mesas']);
-    },
-    error: (error) => {
-      console.error('Error al solicitar cuenta:', error);
-      alert('Error al solicitar cuenta');
+    if (this.itemsPendientes.length > 0) {
+      this.toastService.warning(
+        'Items pendientes',
+        'Debe enviar todos los items a cocina primero'
+      );
+      return;
     }
-  });
-}
+
+    this.mesasApiService.actualizarEstadoMesa({
+      mesa_id: this.mesaId,
+      estado_id: 2,
+      comensales: 0
+    }).subscribe({
+      next: () => {
+        this.toastService.success(
+          '✅ Cuenta solicitada',
+          'La mesa está lista para cobrar'
+        );
+        this.router.navigate(['/mesas']);
+      },
+      error: (error) => {
+        console.error('Error al solicitar cuenta:', error);
+        this.toastService.error('Error', 'No se pudo solicitar la cuenta');
+      }
+    });
+  }
 
   volver() {
     this.router.navigate(['/mesas']);
