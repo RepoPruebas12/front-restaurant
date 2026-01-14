@@ -18,11 +18,11 @@ import { AuthService } from '../../../../core/services/auth.service';
           <span class="text-green-600 text-sm">+12.5% vs ayer</span>
         </div>
 
-        <div class="bg-white rounded-lg shadow p-6">
-          <h3 class="text-gray-500 text-sm font-medium">Órdenes Activas</h3>
-          <p class="text-3xl font-bold text-gray-900 mt-2">18</p>
-          <span class="text-green-600 text-sm">+5 vs ayer</span>
-        </div>
+        <!-- <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-gray-500 text-sm font-medium">Mesas libres </h3>
+          <p class="text-3xl font-bold text-gray-900 mt-2">2</p>
+          <span class="text-green-600 text-sm">/40</span>
+        </div> -->
 
         <div class="bg-white rounded-lg shadow p-6">
           <h3 class="text-gray-500 text-sm font-medium">Mesas Ocupadas</h3>
@@ -31,9 +31,9 @@ import { AuthService } from '../../../../core/services/auth.service';
         </div>
 
         <div class="bg-white rounded-lg shadow p-6">
-          <h3 class="text-gray-500 text-sm font-medium">Ticket Promedio</h3>
+          <h3 class="text-gray-500 text-sm font-medium">compra Promedio</h3>
           <p class="text-3xl font-bold text-gray-900 mt-2">S/ 85</p>
-          <span class="text-green-600 text-sm">+8.2% vs ayer</span>
+          <span class="text-green-600 text-sm">+10% vs ayer</span>
         </div>
       </div>
     </div>

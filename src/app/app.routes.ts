@@ -31,7 +31,14 @@ export const routes: Routes = [
         path: 'productos',
         loadComponent: () => import('./modules/productos/views/productos/productos.component').then(m => m.ProductosComponent),
         data: { roles: ['admin', 'mesero', 'cocina', 'caja'] }
+      },
+      {
+        path: 'ordenes/tomar-orden',
+        loadComponent: () => import('./modules/ordenes/views/tomar-orden/tomar-orden.component').then(m => m.TomarOrdenComponent),
+        data: { roles: ['admin', 'mesero'] }
       }
+
+
     ]
   }
 ];
