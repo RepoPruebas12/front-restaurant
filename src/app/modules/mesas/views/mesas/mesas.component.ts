@@ -7,11 +7,13 @@ import { OrdenesApiService } from '../../../ordenes/services/ordenes-api.service
 import { Mesa, Salon } from '../../interfaces/mesa.interface';
 import { AuthService } from '../../../../core/services/auth.service';
 import { ToastService } from '../../../../core/services/toast.service';
+import { ModalComensalesComponent } from '../../components/modal-comensales/modal-comensales.component';
+import { ModalCobroComponent } from '../../components/modal-cobro/modal-cobro.component';
 
 @Component({
   selector: 'app-mesas',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ModalComensalesComponent, ModalCobroComponent],
   templateUrl: './mesas.component.html',
   styleUrls: ['./mesas.component.css']
 })
@@ -99,9 +101,11 @@ export class MesasComponent implements OnInit {
   }
 
   abrirModal(mesa: Mesa) {
-    // Si es CAJA y mesa pide cuenta → Abrir modal cobro
+    // Si es CAJA y mesa pide cuenta → Ir a cobrar
     if (this.esRolCaja && mesa.estado_id === 2) {
-      this.abrirModalCobro(mesa);
+      this.router.navigate(['/caja/cobrar'], {
+        queryParams: { mesa_id: mesa.id }
+      });
       return;
     }
 
@@ -174,45 +178,17 @@ export class MesasComponent implements OnInit {
     });
   }
 
-  cambiarEstado(estado_id: number) {
-    if (!this.mesaSeleccionada) return;
-
-    const data = {
-      mesa_id: this.mesaSeleccionada.id,
-      estado_id: estado_id,
-      comensales: estado_id === 0 ? 0 : this.mesaSeleccionada.comensales
-    };
-
-    this.mesasApiService.actualizarEstadoMesa(data).subscribe({
-      next: () => {
-        const mensaje = estado_id === 0 ? 'Mesa liberada' : 'Estado actualizado';
-        this.toastService.success(mensaje, `Mesa ${this.mesaSeleccionada!.numero}`);
-        this.cargarMesas();
-        this.cerrarModal();
-      },
-      error: (error) => {
-        console.error('Error al cambiar estado:', error);
-        this.toastService.error('Error', 'No se pudo cambiar el estado');
-      }
-    });
-  }
-
   // MÉTODOS PARA MODAL COBRO
-
-  abrirModalCobro(mesa: Mesa) {
-    // Redirigir a vista completa de cobro
-    this.router.navigate(['/caja/cobrar'], {
-      queryParams: {
-        mesa_id: mesa.id
-      }
-    });
-  }
 
   cerrarModalCobro() {
     this.showModalCobro = false;
     this.mesaSeleccionada = null;
     this.ordenCobro = null;
     this.itemsCobro = [];
+  }
+
+  cambiarMetodoPago(metodo: string) {
+    this.metodoPago = metodo;
   }
 
   cobrar() {
