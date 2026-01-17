@@ -5,6 +5,7 @@ import { ProductosApiService } from '../../services/productos-api.service';
 import { Producto, Categoria } from '../../interfaces/producto.interface';
 import { CrearProductoRequest, ActualizarProductoRequest } from '../../interfaces/crear-producto.interface';
 import { AuthService } from '../../../../core/services/auth.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-productos',
@@ -40,7 +41,7 @@ export class ProductosComponent implements OnInit {
   constructor(
     private productosApiService: ProductosApiService,
     private authService: AuthService
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.userRole = this.authService.currentUserValue?.rol || '';
@@ -153,73 +154,121 @@ export class ProductosComponent implements OnInit {
   }
 
   guardarProducto() {
-  const restauranteId = this.authService.currentUserValue?.restaurante_id || 1;
+    const restauranteId = this.authService.currentUserValue?.restaurante_id || 1;
 
-  if (this.modoEdicion) {
-    // Actualizar
-    const data: ActualizarProductoRequest = {
-      id: this.productoForm.id,
-      nombre: this.productoForm.nombre,
-      precio: this.productoForm.precio,
-      categoria_id: this.productoForm.categoria_id,
-      disponible: this.productoForm.disponible,
-      controla_stock: this.productoForm.controla_stock,
-      stock_actual: this.productoForm.stock_actual,
-      stock_minimo: this.productoForm.stock_minimo,
-      imagen: this.productoForm.imagen
-    };
+    if (this.modoEdicion) {
+      // Actualizar
+      const data: ActualizarProductoRequest = {
+        id: this.productoForm.id,
+        nombre: this.productoForm.nombre,
+        precio: this.productoForm.precio,
+        categoria_id: this.productoForm.categoria_id,
+        disponible: this.productoForm.disponible,
+        controla_stock: this.productoForm.controla_stock,
+        stock_actual: this.productoForm.stock_actual,
+        stock_minimo: this.productoForm.stock_minimo,
+        imagen: this.productoForm.imagen
+      };
 
-    console.log('📤 Datos a actualizar:', data); // ← Debug
+      console.log('📤 Datos a actualizar:', data); // ← Debug
 
-    this.productosApiService.actualizarProducto(data).subscribe({
-      next: () => {
-        this.cargarProductos();
-        this.cerrarModal();
-      },
-      error: (error) => {
-        console.error('❌ Error completo:', error); // ← Ver error completo
-        console.error('❌ Mensaje del servidor:', error.error);
-      }
-    });
-  } else {
-    // Crear
-    const data: CrearProductoRequest = {
-      restaurante_id: restauranteId,
-      nombre: this.productoForm.nombre,
-      precio: this.productoForm.precio,
-      categoria_id: this.productoForm.categoria_id,
-      disponible: this.productoForm.disponible,
-      controla_stock: this.productoForm.controla_stock,
-      stock_actual: this.productoForm.stock_actual,
-      stock_minimo: this.productoForm.stock_minimo,
-      imagen: this.productoForm.imagen || ''
-    };
-
-    console.log('📤 Datos a crear:', data); // ← Debug
-
-    this.productosApiService.crearProducto(data).subscribe({
-      next: () => {
-        this.cargarProductos();
-        this.cerrarModal();
-      },
-      error: (error) => {
-        console.error('❌ Error completo:', error); // ← Ver error completo
-        console.error('❌ Mensaje del servidor:', error.error);
-      }
-    });
-  }
-}
-
-  eliminarProducto(id: number) {
-    if (confirm('¿Estás seguro de eliminar este producto?')) {
-      this.productosApiService.eliminarProducto(id).subscribe({
+      this.productosApiService.actualizarProducto(data).subscribe({
         next: () => {
+          Swal.fire({
+            icon: 'success',
+            title: 'Producto Actualizado',
+            text: 'El producto fue actualizado correctamente.',
+            timer: 2000,
+            showConfirmButton: false
+          });
           this.cargarProductos();
+          this.cerrarModal();
         },
         error: (error) => {
-          console.error('Error al eliminar producto:', error);
+          console.error('❌ Error completo:', error); // ← Ver error completo
+          console.error('❌ Mensaje del servidor:', error.error);
+        }
+      });
+    } else {
+      // Crear
+      const data: CrearProductoRequest = {
+        restaurante_id: restauranteId,
+        nombre: this.productoForm.nombre,
+        precio: this.productoForm.precio,
+        categoria_id: this.productoForm.categoria_id,
+        disponible: this.productoForm.disponible,
+        controla_stock: (this.productoForm.categoria_id === 4 || this.productoForm.categoria_id === 5) ? 1 : this.productoForm.controla_stock,
+        stock_actual: this.productoForm.stock_actual,
+        stock_minimo: this.productoForm.stock_minimo,
+        imagen: this.productoForm.imagen || ''
+      };
+
+      console.log('📤 Datos a crear:', data); // ← Debug
+
+      this.productosApiService.crearProducto(data).subscribe({
+        next: () => {
+          Swal.fire({
+            icon: 'success',
+            title: 'Producto Creado',
+            text: 'El producto fue creado correctamente.',
+            timer: 2000,
+            showConfirmButton: false
+          });
+          this.cargarProductos();
+          this.cerrarModal();
+        },
+        error: (error) => {
+          console.error('❌ Error completo:', error); // ← Ver error completo
+          console.error('❌ Mensaje del servidor:', error.error);
         }
       });
     }
+  }
+
+  eliminarProducto(id: number) {
+    Swal.fire({
+      title: '¿Eliminar Producto?',
+      text: 'Esta acción no se puede deshacer',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        Swal.fire({
+          title: 'Eliminando...',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        this.productosApiService.eliminarProducto(id).subscribe({
+          next: () => {
+            Swal.fire({
+              icon: 'success',
+              title: 'Eliminado',
+              text: 'El producto fue eliminado correctamente',
+              timer: 2000,
+              showConfirmButton: false
+            });
+
+            this.cargarProductos();
+          },
+          error: (error) => {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: error?.error?.message || 'No se pudo eliminar el producto'
+            });
+
+            console.error('❌ Error al eliminar producto:', error);
+          }
+        });
+      }
+    });
+
   }
 }
