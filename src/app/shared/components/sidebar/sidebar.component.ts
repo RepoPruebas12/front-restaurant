@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
-import { Usuario } from '../../interfaces/usuario.interface';
 import { MENU_ITEMS, MenuItem } from '../../config/sidebar.config';
+
+declare const initFlowbite: any;
 
 @Component({
   selector: 'app-sidebar',
@@ -12,34 +13,32 @@ import { MENU_ITEMS, MenuItem } from '../../config/sidebar.config';
   templateUrl: './sidebar.component.html',
   styleUrls: ['./sidebar.component.css']
 })
-export class SidebarComponent implements OnInit {
+export class SidebarComponent implements OnInit, AfterViewInit {
   menuItems: MenuItem[] = [];
-  currentUser: Usuario | null = null;
-  isCollapsed = false;
+  currentUserRole: string = '';
 
-  constructor(
-    private authService: AuthService,
-    private router: Router
-  ) {}
+  constructor(private authService: AuthService) {}
 
   ngOnInit() {
     this.authService.currentUser$.subscribe(user => {
-      this.currentUser = user;
-      this.menuItems = this.getFilteredMenu(user?.rol);
+      this.currentUserRole = user?.rol || '';
+      this.filterMenuByRole();
     });
   }
 
-  getFilteredMenu(userRole?: string): MenuItem[] {
-    if (!userRole) return [];
-    return MENU_ITEMS.filter(item => item.roles.includes(userRole));
+  ngAfterViewInit() {
+    if (typeof initFlowbite === 'function') {
+      initFlowbite();
+    }
   }
 
-  logout() {
-    this.authService.logout();
-    this.router.navigate(['/login']);
-  }
-
-  toggleSidebar() {
-    this.isCollapsed = !this.isCollapsed;
+  private filterMenuByRole() {
+    if (!this.currentUserRole) {
+      this.menuItems = [];
+      return;
+    }
+    this.menuItems = MENU_ITEMS.filter(item =>
+      item.roles.includes(this.currentUserRole)
+    );
   }
 }

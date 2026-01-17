@@ -16,6 +16,7 @@ export const routes: Routes = [
     path: '',
     component: LayoutComponent,
     canActivate: [roleGuard],
+    data: { roles: ['admin', 'mesero', 'cocina', 'caja'] },
     children: [
       {
         path: 'dashboard',
@@ -37,8 +38,6 @@ export const routes: Routes = [
         loadComponent: () => import('./modules/ordenes/views/tomar-orden/tomar-orden.component').then(m => m.TomarOrdenComponent),
         data: { roles: ['admin', 'mesero'] }
       },
-
-      //caja vista + caja desde mesas hasta caja
       {
         path: 'caja',
         loadComponent: () => import('./modules/caja/views/caja/caja.component').then(m => m.CajaComponent),
