@@ -27,6 +27,11 @@
             ],
             "styles": [
               "src/styles.css"
+
+            ],
+            "scripts": [
+              "node_modules/flowbite/dist/flowbite.min.js"
+
             ]
           },
           "configurations": {

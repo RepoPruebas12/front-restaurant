@@ -1,19 +1,14 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { NavbarComponent } from '../navbar/navbar.component';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule, SidebarComponent],
-  template: `
-    <div class="flex h-screen overflow-hidden">
-      <app-sidebar></app-sidebar>
-      <main class="flex-1 overflow-y-auto bg-gray-100">
-        <router-outlet></router-outlet>
-      </main>
-    </div>
-  `
+  imports: [CommonModule, RouterModule, NavbarComponent, SidebarComponent],
+  templateUrl: './layout.component.html',
+  styleUrls: ['./layout.component.css']
 })
 export class LayoutComponent {}

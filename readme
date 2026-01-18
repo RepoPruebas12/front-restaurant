@@ -5,3 +5,18 @@ px ng version
 
 npx ng serve
 npm install ngx-sonner  para toast
+npm install lucide-angular
+npm install flowbite flowbite-angular
+
+"styles": [
+  "src/styles.css",
+  "node_modules/flowbite/dist/flowbite.min.css"
+],
+"scripts": [
+  "node_modules/flowbite/dist/flowbite.min.js"
+]
+
+
+
+
+npm install flowbite --legacy-peer-deps
